@@ -1,0 +1,22 @@
+{
+  "name": "raresats",
+  "version": "0.8.1",
+  "main": "./index.js",
+  "bin": "./cli.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Simon GLATRE (simon@bysato.com)",
+  "license": "",
+  "description": "Find and extract rare and exotic sats.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SATO-Technologies/raresats"
+  },
+  "dependencies": {
+    "argparse": "^2.0.1",
+    "json-bigint": "^1.0.0",
+    "node-fetch": "^3.3.2"
+  },
+  "type": "module"
+}
