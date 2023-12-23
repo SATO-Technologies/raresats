@@ -100,7 +100,7 @@ function _mergeLocations(locations) {
   // Step 4: merge adjacent locations of the same type
   let i = 0;
   while (i < mergedLocations.length - 1) {
-    if (mergedLocations[i].type == mergedLocations[i + 1].type) {
+    if (mergedLocations[i].type == mergedLocations[i + 1].type && mergedLocations[i].offset + mergedLocations[i].size == mergedLocations[i + 1].offset) {
       mergedLocations[i].size += mergedLocations[i + 1].size;
       mergedLocations.splice(i + 1, 1);
     }
