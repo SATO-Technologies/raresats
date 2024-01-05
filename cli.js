@@ -31,7 +31,8 @@ extractGroup.add_argument("-u", "--utxo", { help: "The utxo to extract rare sats
 
 extractParser.add_argument("--ordurl", { help: "The ord instance to fetch ranges from", default: "http://127.0.0.1:4001"});
 extractParser.add_argument("--mempoolurl", { help: "The mempool instance to fetch utxos from", default: "https://mempool.space"});
-extractParser.add_argument("-s", "--satributes", { help: "The sattributes to extract", nargs: "*", choices: SATRIBUTES });
+extractParser.add_argument("-s", "--satributes", { help: "The sattributes to extract", nargs: "*", default: ["mythic", "legendary", "epic", "rare", "uncommon"], choices: SATRIBUTES });
+extractParser.add_argument("-f", "--feeutxos", { help: "The utxos to use for fees", nargs: "*", default: [] });
 
 // Parse
 const args = parser.parse_args();
@@ -59,7 +60,8 @@ if(args.command === "extract") {
     utxo: args.utxo,
     ordURL: args.ordurl,
     mempoolURL: args.mempoolurl,
-    satributes: args.satributes
+    satributes: args.satributes,
+    feeUtxos: args.feeutxos
   });
 }
   
