@@ -41,13 +41,7 @@ export function getAddressType(address) {
 function _estimateTxSize(inputsTypesCount, outputsTypesCount) {
     const segwitTypes = ["p2wpkh", "p2wsh", "p2tr"];
 
-    let isSegwitTx = false;
-    for (let type of segwitTypes) {
-        if (type in inputsTypesCount) {
-            isSegwitTx = true;
-            break;
-        }
-    }
+    const isSegwitTx = segwitTypes.some(type => type in inputsTypesCount);
 
     const baseSize = 4 + 1 + 1 + 4 + (isSegwitTx ? 0.5 : 0);
 
@@ -63,11 +57,10 @@ function _estimateTxSize(inputsTypesCount, outputsTypesCount) {
         "p2tr": 8 + 1 + 34
     };
 
-    return (
-        baseSize
-        + Object.entries(inputTypeToSize).reduce((acc, [type, size]) => acc + inputsTypesCount[type] * size, 0)
-        + Object.entries(outputTypeToSize).reduce((acc, [type, size]) => acc + outputsTypesCount[type] * size, 0)
-    );
+    let totalInputSize = Object.entries(inputTypeToSize).reduce((acc, [type, size]) => acc + inputsTypesCount[type] * size, 0);
+    let totalOutputSize = Object.entries(outputTypeToSize).reduce((acc, [type, size]) => acc + outputsTypesCount[type] * size, 0);
+
+    return baseSize + totalInputSize + totalOutputSize;
 }
 
 export function estimateTxSize(psbt) {
@@ -81,13 +74,13 @@ export function estimateTxSize(psbt) {
     };
     let outputsTypesCount = {...inputsTypesCount};
 
-    psbt.data.inputs.forEach((input, index) => {
+    psbt.data.inputs.forEach(input => {
         let address = bitcoin.address.fromOutputScript(input.witnessUtxo.script, mainnet);
         let type = getAddressType(address);
         inputsTypesCount[type] += 1;
     });
     
-    psbt.txOutputs.forEach((output, index) => {
+    psbt.txOutputs.forEach(output => {
         let address = output.address;
         let type = getAddressType(address);
         outputsTypesCount[type] += 1;
