@@ -35,7 +35,7 @@ class PSBTModifier {
 
   constructor() {}
 
-  modifyPSBT(psbtBase64) {
+  async modifyPSBT(psbtBase64 , { feeUtxos } = {}) {
     return psbtBase64;
   }
 }

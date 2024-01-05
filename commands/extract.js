@@ -14,9 +14,6 @@ const { bitcoin: { transactions } } = mempoolJS({ hostname: 'mempool.space' });
 
 
 function _computeOutputs(value, locations) {
-  console.log(value);
-  console.log(locations);
-
   // Starting padding and first location
   let sizes = [];
   if (locations[0].offset != 0n) {
@@ -38,9 +35,6 @@ function _computeOutputs(value, locations) {
   if (value - (locations[i].offset + locations[i].size) > 0n) {
     sizes.push({size: value - (locations[i].offset + locations[i].size), type: "funds"});
   }
-
-  console.log(sizes);
-  console.log("vvvvvvvvvvvvv");
 
   let res = [];
   i = 0;
@@ -92,6 +86,7 @@ export async function extract({
   ordURL = "http://127.0.0.1:4001",
   mempoolURL = "https://mempool.space",
   satributes = null,
+  feeUtxos = null,
 }) {
   let findStatus = await find({ address, utxo, ordURL, mempoolURL, satributes });
   if (!findStatus.success) return findStatus;
@@ -106,7 +101,7 @@ export async function extract({
 
   let psbt = new bitcoin.Psbt({ network: mainnet });
 
-  // Fetch data for witnessUtxo and nonWitnessUtxo
+  // Build the PSBT with no fee
   let txidToTxHex = {};
   let txidToTx = {};
   let outpointToValue = {};
@@ -114,20 +109,16 @@ export async function extract({
     let tmp = u.split(":");
     let txid = tmp[0];
     let vout = parseInt(tmp[1]);
+
     try {
       txidToTxHex[txid] = await transactions.getTxHex({ txid });
+      txidToTx[txid] = bitcoin.Transaction.fromHex(txidToTxHex[txid]);
+      outpointToValue[u] = txidToTx[txid].outs[vout].value;
     }
     catch (e) {
       return failure(`Error fetching tx hex: ${e}`);
     }
-    txidToTx[txid] = bitcoin.Transaction.fromHex(txidToTxHex[txid]);
-    outpointToValue[u] = txidToTx[txid].outs[vout].value;
-  }
 
-  // Build the PSBT with no fee
-  for (let u of utxos) {
-    let { txid, vout } = u.split(":");
-    vout = parseInt(vout);
     psbt.addInput({
       hash: txid,
       index: vout,
@@ -138,6 +129,7 @@ export async function extract({
       },
       //nonWitnessUtxo: Buffer.from(txidToTxHex[txid], 'hex'),
     });
+
     for (let o of utxosToOutputs[u]) {
       psbt.addOutput({
         script: bitcoin.address.toOutputScript(ADDRESSES[o.type], mainnet),
@@ -147,7 +139,7 @@ export async function extract({
   }
 
   let modifier = new PSBTModifier();
-  let modifiedPsbt = modifier.modifyPSBT(psbt.toBase64());
+  let modifiedPsbt = await modifier.modifyPSBT(psbt.toBase64(), { feeUtxos });
 
   return success(modifiedPsbt);
 }
