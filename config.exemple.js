@@ -58,6 +58,7 @@ class PSBTModifier {
   }
 
   The types from SATRIBUTES must be present.
+  The type "mixed" is used for utxos with multiple sattributes.
   The type "funds" is reserved for the address that will receive the funds and must be present.
   The type "fundingChange" is reserved for the address that will receive the change of the funding utxo and must be present.
 */
