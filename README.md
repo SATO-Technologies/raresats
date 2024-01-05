@@ -51,7 +51,39 @@ Library:
 const raresats = require('raresats');
 const res = raresats.find({
   address: 'bc1p...',
+  // utxo: 'txid:vout',
   satributes: ['uncommon', 'rare', 'epic', 'legendary'],
+  // ordURL = "http://127.0.0.1:4001",
+  // mempoolURL = "https://mempool.space",
+});
+console.log(res);
+```
+
+### Extract
+
+#### CLI
+
+```bash
+raresats extract -a <address> -s uncommon rare epic legendary -f <feeFundingUTXO>
+raresats extract -u <utxo> -s black alpha omega -f <feeUtxos>
+```
+
+Options:
+- `--ordurl <url>`: the url of the ord instance used to fetch ranges (default: http://127.0.0.1:4001). This instance MUST run the JSON-RPC API.
+- `--mempoolurl <url>`: the url of the mempool instance used to fetch utxos (default: https://mempool.space)
+- `-s <satributes>`: the satributes to extract (default: all) separated by a space.
+- `-f <feeUtxos>`: the utxos to use to fund the fee.
+
+Library:
+```javascript
+const raresats = require('raresats');
+const res = raresats.extract({
+  address: 'bc1p...',
+  // utxo: 'txid:vout',
+  satributes: ['uncommon', 'rare', 'epic', 'legendary'],
+  // ordURL = "http://127.0.0.1:4001",
+  // mempoolURL = "https://mempool.space",
+  feeUtxos: ['txid1:vout1', 'txid2:vout2'],
 });
 console.log(res);
 ```
