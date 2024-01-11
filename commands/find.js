@@ -116,13 +116,10 @@ function _removeTrailingSlash(url) {
   return url.endsWith('/') ? url.slice(0, -1) : url;
 }
 
-export async function find({
-  address = null,
-  utxo = null,
-  ordURL = "http://127.0.0.1:4001",
-  mempoolURL = "https://mempool.space",
-  satributes = null,
-}) {
+export async function findFromKnownData({ outpointToRanges, utxosValues, satributes = null }) {
+
+  let utxos = Object.keys(outpointToRanges);
+
   if (satributes == null) {
     satributes = SATRIBUTES;
   }
@@ -130,6 +127,67 @@ export async function find({
     // Ensures that types is ordered by priority (SATRIBUTES is)
     satributes = SATRIBUTES.filter(x => satributes.includes(x));
   }
+
+  let outpointData = {};
+  for (let u of utxos) outpointData[u] = { utxoValue: utxosValues[u] || null };
+
+  for (let u of utxos) {
+    outpointData[u].rareRanges = {};
+    for (let s of satributes) {
+      // TODO: listingFunc shouldn't change the ranges. For now we clone to avoid an issue.
+      let rgs = minRepr(typeToListingFunc[s](cloneRanges(outpointToRanges[u])));
+      if (rgs.length > 0) {
+        outpointData[u].rareRanges[s] = rgs;
+      }
+    }
+  }
+
+  // Count rare and exotic sats
+  let totalCount = {};
+  for (let s of satributes) totalCount[s] = 0n;
+  for (let u of utxos) outpointData[u].count = {};
+  for (let u of utxos) {
+    for (let s of satributes) {
+      if (outpointData[u].rareRanges[s]) {
+        let n = rangesSize(outpointData[u].rareRanges[s]);
+        outpointData[u].count[s] = n + (outpointData[u].count[s] || 0n);
+        totalCount[s] += n;
+      }
+    }
+  }
+
+  // Add locations
+  for (let u of utxos) {
+    let locations = [];
+    for (let s of satributes) {
+      if (outpointData[u].rareRanges[s]) {
+        let locs = _getLocations(outpointData[u].rareRanges[s], outpointToRanges[u], s);
+        locations = locations.concat(locs.map(x => ({ type: s, ...x })));
+      }
+    }
+    outpointData[u].locations = _mergeLocations(locations);
+  }
+
+  // Remove empty outpoints
+  for (let u of utxos) {
+    if (Object.keys(outpointData[u].rareRanges).length == 0) {
+      delete outpointData[u];
+    }
+  }
+
+  return success({
+    totalCount,
+    utxos: { ...outpointData },
+  });
+}
+
+export async function find({
+  address = null,
+  utxo = null,
+  ordURL = "http://127.0.0.1:4001",
+  mempoolURL = "https://mempool.space",
+  satributes = null,
+}) {
 
   let utxos = [];
 
@@ -193,55 +251,5 @@ export async function find({
     }
   }
 
-  let outpointData = {};
-  for (let u of utxos) outpointData[u] = { utxoValue: utxosValues[u] };
-
-  for (let u of utxos) {
-    outpointData[u].rareRanges = {};
-    for (let s of satributes) {
-      // TODO: listingFunc shouldn't change the ranges. For now we clone to avoid an issue.
-      let rgs = minRepr(typeToListingFunc[s](cloneRanges(outpointToRanges[u])));
-      if (rgs.length > 0) {
-        outpointData[u].rareRanges[s] = rgs;
-      }
-    }
-  }
-
-  // Count rare and exotic sats
-  let totalCount = {};
-  for (let s of satributes) totalCount[s] = 0n;
-  for (let u of utxos) outpointData[u].count = {};
-  for (let u of utxos) {
-    for (let s of satributes) {
-      if (outpointData[u].rareRanges[s]) {
-        let n = rangesSize(outpointData[u].rareRanges[s]);
-        outpointData[u].count[s] = n + (outpointData[u].count[s] || 0n);
-        totalCount[s] += n;
-      }
-    }
-  }
-
-  // Add locations
-  for (let u of utxos) {
-    let locations = [];
-    for (let s of satributes) {
-      if (outpointData[u].rareRanges[s]) {
-        let locs = _getLocations(outpointData[u].rareRanges[s], outpointToRanges[u], s);
-        locations = locations.concat(locs.map(x => ({ type: s, ...x })));
-      }
-    }
-    outpointData[u].locations = _mergeLocations(locations);
-  }
-
-  // Remove empty outpoints
-  for (let u of utxos) {
-    if (Object.keys(outpointData[u].rareRanges).length == 0) {
-      delete outpointData[u];
-    }
-  }
-
-  return success({
-    totalCount,
-    utxos: { ...outpointData },
-  });
+  return findFromKnownData({ outpointToRanges, utxosValues, satributes });
 }
