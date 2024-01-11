@@ -3,6 +3,7 @@ import { bigIntMin } from "../utils/bigints.js";
 import { success, failure } from "../utils/outputMessages.js";
 import { SATRIBUTES, typeToListingFunc } from "../rareAndExotic/sats.js";
 
+import mempoolJS from "@mempool/mempool.js";
 import fetch from 'node-fetch';
 import JSONbig from 'json-bigint';
 const JSONbigNative = JSONbig({ useNativeBigInt: true, alwaysParseAsBig: true });
@@ -116,7 +117,7 @@ function _removeTrailingSlash(url) {
   return url.endsWith('/') ? url.slice(0, -1) : url;
 }
 
-export async function findFromKnownData({ outpointToRanges, utxosValues, satributes = null }) {
+export async function findFromKnownData({ outpointToRanges, satributes = null }) {
 
   let utxos = Object.keys(outpointToRanges);
 
@@ -129,7 +130,7 @@ export async function findFromKnownData({ outpointToRanges, utxosValues, satribu
   }
 
   let outpointData = {};
-  for (let u of utxos) outpointData[u] = { utxoValue: utxosValues[u] || null };
+  for (let u of utxos) outpointData[u] = {};
 
   for (let u of utxos) {
     outpointData[u].rareRanges = {};
@@ -189,6 +190,8 @@ export async function find({
   satributes = null,
 }) {
 
+  const { bitcoin: { addresses } } = mempoolJS({ hostname: mempoolURL });
+
   let utxos = [];
 
   if (address == null && utxo == null) {
@@ -199,8 +202,6 @@ export async function find({
     return failure("Only one of address or utxo must be provided");
   }
 
-  let utxosValues = {};
-
   if (address != null) {
     try {
       let req = await fetch(`${_removeTrailingSlash(mempoolURL)}/api/address/${address}/utxo`);
@@ -208,7 +209,6 @@ export async function find({
       for (let utxo of res) {
         if (utxo.status.confirmed) {
           utxos.push(`${utxo.txid}:${utxo.vout}`);
-          utxosValues[`${utxo.txid}:${utxo.vout}`] = utxo.value;
         }
       }
     }
@@ -251,5 +251,5 @@ export async function find({
     }
   }
 
-  return findFromKnownData({ outpointToRanges, utxosValues, satributes });
+  return findFromKnownData({ outpointToRanges, satributes });
 }

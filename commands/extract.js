@@ -10,8 +10,6 @@ import mempoolJS from "@mempool/mempool.js";
 const mainnet = bitcoin.networks.bitcoin;
 bitcoin.initEccLib(ecc);
 
-const { bitcoin: { transactions } } = mempoolJS({ hostname: 'mempool.space' });
-
 
 function _computeOutputs(value, locations) {
   // Starting padding and first location
@@ -88,23 +86,19 @@ export async function extract({
   satributes = null,
   feeUtxos = null,
 }) {
+  const { bitcoin: { transactions } } = mempoolJS({ hostname: 'mempool.space' });
+
   let findStatus = await find({ address, utxo, ordURL, mempoolURL, satributes });
   if (!findStatus.success) return findStatus;
   let findRes = findStatus.result;
 
   let utxos = Object.keys(findRes.utxos);
-  let utxosToOutputs = {};
-
-  for (let u of utxos) {
-    utxosToOutputs[u] = _computeOutputs(findRes.utxos[u].utxoValue, findRes.utxos[u].locations);
-  }
 
   let psbt = new bitcoin.Psbt({ network: mainnet });
 
   // Build the PSBT with no fee
   let txidToTxHex = {};
   let txidToTx = {};
-  let outpointToValue = {};
   for (let u of utxos) {
     let tmp = u.split(":");
     let txid = tmp[0];
@@ -113,7 +107,6 @@ export async function extract({
     try {
       txidToTxHex[txid] = await transactions.getTxHex({ txid });
       txidToTx[txid] = bitcoin.Transaction.fromHex(txidToTxHex[txid]);
-      outpointToValue[u] = txidToTx[txid].outs[vout].value;
     }
     catch (e) {
       return failure(`Error fetching tx hex: ${e}`);
@@ -125,12 +118,14 @@ export async function extract({
       sequence: 0xfffffffd,
       witnessUtxo: {
         script: txidToTx[txid].outs[vout].script,
-        value: outpointToValue[u],
+        value: txidToTx[txid].outs[vout].value,
       },
       //nonWitnessUtxo: Buffer.from(txidToTxHex[txid], 'hex'),
     });
 
-    for (let o of utxosToOutputs[u]) {
+    let outputs = _computeOutputs(BigInt(txidToTx[txid].outs[vout].value), findRes.utxos[u].locations);
+
+    for (let o of outputs) {
       psbt.addOutput({
         script: bitcoin.address.toOutputScript(ADDRESSES[o.type], mainnet),
         value: Number(o.size),
