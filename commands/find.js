@@ -3,7 +3,6 @@ import { bigIntMin } from "../utils/bigints.js";
 import { success, failure } from "../utils/outputMessages.js";
 import { SATRIBUTES, typeToListingFunc } from "../rareAndExotic/sats.js";
 
-import mempoolJS from "@mempool/mempool.js";
 import fetch from 'node-fetch';
 import JSONbig from 'json-bigint';
 const JSONbigNative = JSONbig({ useNativeBigInt: true, alwaysParseAsBig: true });
@@ -197,9 +196,6 @@ export async function find({
   mempoolURL = "https://mempool.space",
   satributes = null,
 }) {
-
-  const { bitcoin: { addresses } } = mempoolJS({ hostname: mempoolURL });
-
   let utxos = [];
 
   if (address == null && utxo == null) {
@@ -212,8 +208,7 @@ export async function find({
 
   if (address != null) {
     try {
-      let req = await fetch(`${_removeTrailingSlash(mempoolURL)}/api/address/${address}/utxo`);
-      let res = JSONbigNative.parse(await req.text());
+      let res = await fetch(`${_removeTrailingSlash(mempoolURL)}/api/address/${address}/utxo`).then(r => r.json());
       for (let utxo of res) {
         if (utxo.status.confirmed) {
           utxos.push(`${utxo.txid}:${utxo.vout}`);
@@ -234,12 +229,12 @@ export async function find({
   let outpointToRanges = {};
   for (let u of utxos) {
     try {
-      let req = await fetch(`${_removeTrailingSlash(ordURL)}/output/${u}`, {
+      let res = await fetch(`${_removeTrailingSlash(ordURL)}/output/${u}`, {
         headers: {
           'Accept': 'application/json'
         }
-      });
-      let rgs = JSONbigNative.parse(await req.text()).sat_ranges;
+      }).then(r => r.text());
+      let rgs = JSONbigNative.parse(res).sat_ranges;
       if (rgs == null) {
         return failure(`Error fetching sat ranges of ${u}, looks like it is spent or the ord instance is not accessible or not synced`);
       }

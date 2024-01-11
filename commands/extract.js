@@ -5,7 +5,6 @@ import { bigIntMin } from '../utils/bigints.js';
 
 import * as ecc from 'tiny-secp256k1';
 import * as bitcoin from 'bitcoinjs-lib';
-import mempoolJS from "@mempool/mempool.js";
 
 const mainnet = bitcoin.networks.bitcoin;
 bitcoin.initEccLib(ecc);
@@ -78,6 +77,10 @@ function _computeOutputs(value, locations) {
   return res;
 }
 
+function _removeTrailingSlash(url) {
+  return url.endsWith('/') ? url.slice(0, -1) : url;
+}
+
 export async function extract({
   address = null,
   utxo = null,
@@ -86,13 +89,12 @@ export async function extract({
   satributes = null,
   feeUtxos = null,
 }) {
-  const { bitcoin: { transactions } } = mempoolJS({ hostname: 'mempool.space' });
-
   let findStatus = await find({ address, utxo, ordURL, mempoolURL, satributes });
   if (!findStatus.success) return findStatus;
   let findRes = findStatus.result;
 
   let utxos = Object.keys(findRes.utxos);
+  if (utxos.length == 0) return success(null);
 
   let psbt = new bitcoin.Psbt({ network: mainnet });
 
@@ -105,7 +107,7 @@ export async function extract({
     let vout = parseInt(tmp[1]);
 
     try {
-      txidToTxHex[txid] = await transactions.getTxHex({ txid });
+      txidToTxHex[txid] = await fetch(`${_removeTrailingSlash(mempoolURL)}/api/tx/${txid}/hex`).then(r => r.text());
       txidToTx[txid] = bitcoin.Transaction.fromHex(txidToTxHex[txid]);
     }
     catch (e) {

@@ -14,7 +14,6 @@
     "url": "https://github.com/SATO-Technologies/raresats"
   },
   "dependencies": {
-    "@mempool/mempool.js": "^2.3.0",
     "argparse": "^2.0.1",
     "bip32": "^4.0.0",
     "bitcoinjs-lib": "^6.1.5",
