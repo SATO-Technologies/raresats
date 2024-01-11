@@ -129,6 +129,14 @@ export async function findFromKnownRanges({ outpointToRanges, satributes = null 
     satributes = SATRIBUTES.filter(x => satributes.includes(x));
   }
 
+  // This code assumes that the right side of a sat-range is inclusive.
+  // The API returns ranges with the right side exclusive, so we subtract 1 from the right side.
+  for (let u of utxos) {
+    for (let r of outpointToRanges[u]) {
+      r[1] = r[1] - 1n;
+    }
+  }
+
   let outpointData = {};
   for (let u of utxos) outpointData[u] = {};
 
@@ -224,7 +232,6 @@ export async function find({
   // `utxos` is now a list of at least one (unspent) outpoint"
 
   let outpointToRanges = {};
-
   for (let u of utxos) {
     try {
       let req = await fetch(`${_removeTrailingSlash(ordURL)}/output/${u}`, {
@@ -240,14 +247,6 @@ export async function find({
     }
     catch (e) {
       return failure(`Error fetching sat ranges of ${u}, looks like it doesn't exist`);
-    }
-  }
-
-  // This code assumes that the right side of a sat-range is inclusive.
-  // The API returns ranges with the right side exclusive, so we subtract 1 from the right side.
-  for (let u of utxos) {
-    for (let r of outpointToRanges[u]) {
-      r[1] = r[1] - 1n;
     }
   }
 
