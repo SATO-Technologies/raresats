@@ -117,7 +117,7 @@ function _removeTrailingSlash(url) {
   return url.endsWith('/') ? url.slice(0, -1) : url;
 }
 
-export async function findFromKnownData({ outpointToRanges, satributes = null }) {
+export async function findFromKnownRanges({ outpointToRanges, satributes = null }) {
 
   let utxos = Object.keys(outpointToRanges);
 
@@ -251,5 +251,5 @@ export async function find({
     }
   }
 
-  return findFromKnownData({ outpointToRanges, satributes });
+  return findFromKnownRanges({ outpointToRanges, satributes });
 }
