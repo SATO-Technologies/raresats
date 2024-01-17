@@ -1,6 +1,6 @@
 import { find } from './find.js';
 import { success, failure } from '../utils/outputMessages.js';
-import { ADDRESSES, MINVAL, PSBTModifier } from '../config.js';
+import { ADDRESSES, POSTAGE, PSBTModifier } from '../config.js';
 import { bigIntMin } from '../utils/bigints.js';
 
 import * as ecc from 'tiny-secp256k1';
@@ -40,14 +40,14 @@ function _computeOutputs(value, locations) {
     let currentSize = sizes[i].size;
     let currentType = sizes[i].type;
 
-    while (currentSize < MINVAL) {
+    while (currentSize < POSTAGE) {
       let nextIndex = i + 1;
       if (nextIndex >= sizes.length) break;
 
       if (sizes[nextIndex].type == "funds") {
         // Take from the funds
-        let toTake = bigIntMin(MINVAL - currentSize, sizes[nextIndex].size);
-        if (sizes[nextIndex].size - toTake < MINVAL) {
+        let toTake = bigIntMin(POSTAGE - currentSize, sizes[nextIndex].size);
+        if (sizes[nextIndex].size - toTake < POSTAGE) {
           // But don't let the funds go below the dust limit
           // or the next rare/exotic output will not be at offset 0
           toTake = sizes[nextIndex].size;

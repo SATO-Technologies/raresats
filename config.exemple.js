@@ -14,7 +14,7 @@ const bip32 = BIP32Factory(ecc);
   The minimum value of an output in satoshis. This is used to pad outputs to the minimum value.
   The code treats this value as the dust limit.
 */
-const MINVAL = 600n;
+const POSTAGE = 600n;
 
 /*
   >>> PERSONALIZE THIS <<<
@@ -85,4 +85,4 @@ if (n1 != n2 || [...SATRIBUTES, "funds", "fundingChange", "mixed"].some(s => !(s
   throw new Error("Mismatch between sattributes and addresses");
 }
 
-export { ADDRESSES, MINVAL, PSBTModifier};
+export { ADDRESSES, POSTAGE, PSBTModifier};
